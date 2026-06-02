@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Store Intelligence — Live</title>
+<style>
+  :root { --bg:#0d1117; --card:#161b22; --line:#30363d; --fg:#e6edf3; --muted:#8b949e;
+          --accent:#7c5cff; --good:#3fb950; --warn:#d29922; --crit:#f85149; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif; }
+  header { padding:18px 24px; border-bottom:1px solid var(--line); display:flex;
+           align-items:center; gap:14px; }
+  header h1 { font-size:18px; margin:0; font-weight:600; }
+  .pill { font-size:12px; color:var(--muted); border:1px solid var(--line);
+          padding:3px 10px; border-radius:999px; }
+  #dot { width:9px;height:9px;border-radius:50%;background:var(--good);display:inline-block; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .card .value { font-size:34px; font-weight:700; margin-top:6px; }
+  .hero .value { font-size:52px; color:var(--accent); }
+  h2 { font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;
+       margin:28px 0 12px; }
+  .bar { display:flex; align-items:center; gap:12px; margin:8px 0; }
+  .bar .name { width:120px; color:var(--muted); font-size:13px; }
+  .bar .track { flex:1; background:#21262d; border-radius:6px; height:26px; overflow:hidden; }
+  .bar .fill { height:100%; background:linear-gradient(90deg,#7c5cff,#3fb6ff);
+               display:flex; align-items:center; justify-content:flex-end; padding-right:8px;
+               color:#fff; font-size:12px; font-weight:600; transition:width .4s ease; }
+  .anoms .item { border-left:3px solid var(--line); padding:8px 12px; margin:8px 0;
+                 background:#0f141a; border-radius:0 8px 8px 0; }
+  .anoms .INFO{border-color:var(--muted)} .anoms .WARN{border-color:var(--warn)}
+  .anoms .CRITICAL{border-color:var(--crit)}
+  .anoms .t { font-weight:600; } .anoms .a { color:var(--muted); font-size:13px; }
+  footer { color:var(--muted); font-size:12px; padding:0 24px 24px; text-align:center; }
+</style>
+</head>
+<body>
+<header>
+  <span id="dot"></span>
+  <h1>Store Intelligence — Live</h1>
+  <span class="pill" id="store">ST1008</span>
+  <span class="pill" id="updated">connecting…</span>
+</header>
+
+<main>
+  <div class="grid">
+    <div class="card hero"><div class="label">Conversion rate</div><div class="value" id="conv">—</div></div>
+    <div class="card"><div class="label">Unique visitors</div><div class="value" id="visitors">—</div></div>
+    <div class="card"><div class="label">Converted</div><div class="value" id="converted">—</div></div>
+    <div class="card"><div class="label">Queue depth (now)</div><div class="value" id="queue">—</div></div>
+    <div class="card"><div class="label">Abandonment</div><div class="value" id="aband">—</div></div>
+  </div>
+
+  <h2>Conversion funnel</h2>
+  <div id="funnel"></div>
+
+  <h2>Active anomalies</h2>
+  <div class="anoms" id="anoms"></div>
+</main>
+
+<footer>Auto-refreshing every 2s · <span id="feed"></span></footer>
+
+<script>
+const STORE = "ST1008";
+const pct = x => (x*100).toFixed(1) + "%";
+
+async function tick() {
+  try {
+    const [m, f, a] = await Promise.all([
+      fetch(`/stores/${STORE}/metrics`).then(r=>r.json()),
+      fetch(`/stores/${STORE}/funnel`).then(r=>r.json()),
+      fetch(`/stores/${STORE}/anomalies`).then(r=>r.json()),
+    ]);
+    document.getElementById("conv").textContent = pct(m.conversion_rate);
+    document.getElementById("visitors").textContent = m.unique_visitors;
+    document.getElementById("converted").textContent = m.converted_visitors;
+    document.getElementById("queue").textContent = m.queue_depth_current;
+    document.getElementById("aband").textContent = pct(m.abandonment_rate);
+
+    const max = Math.max(1, ...f.stages.map(s=>s.visitors));
+    document.getElementById("funnel").innerHTML = f.stages.map(s => `
+      <div class="bar"><div class="name">${s.stage}</div>
+        <div class="track"><div class="fill" style="width:${Math.max(6,100*s.visitors/max)}%">
+          ${s.visitors}${s.drop_off_pct?` · −${s.drop_off_pct}%`:""}</div></div></div>`).join("");
+
+    document.getElementById("anoms").innerHTML = a.anomalies.length
+      ? a.anomalies.map(x => `<div class="item ${x.severity}">
+          <div class="t">${x.type} <span class="a">[${x.severity}]</span></div>
+          <div class="a">${x.detail||""} → ${x.suggested_action||""}</div></div>`).join("")
+      : `<div class="a">No active anomalies.</div>`;
+
+    document.getElementById("dot").style.background = "var(--good)";
+    document.getElementById("updated").textContent = "updated " + new Date().toLocaleTimeString();
+    document.getElementById("feed").textContent = `window ${m.window.start.slice(0,10)} · ${m.pos_transactions} POS txns`;
+  } catch (e) {
+    document.getElementById("dot").style.background = "var(--crit)";
+    document.getElementById("updated").textContent = "disconnected";
+  }
+}
+tick(); setInterval(tick, 2000);
+</script>
+</body>
+</html>

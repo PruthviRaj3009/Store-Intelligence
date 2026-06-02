@@ -1,0 +1,97 @@
+{
+  "store_id": "ST1008",
+  "store_name": "Brigade_Bangalore",
+  "city": "Bangalore",
+  "timezone": "Asia/Kolkata",
+  "open_hours": { "open": "10:00", "close": "22:00" },
+
+  "_note": "Reconstructed from the Excel floor-plan image + visual inspection of the 5 CCTV clips. Camera ROLES below were verified by extracting a frame from each clip (data/frames/*.png): CAM 3 = entrance, CAM 5 = cash counter, CAM 1 & CAM 2 = main floor, CAM 4 = back stockroom (excluded from customer analytics). Pixel polygons are normalized [0..1] and tuned via pipeline/calibrate.py. See CHOICES.md > 'Data reconciliation'.",
+
+  "primary_camera": "CAM_2",
+
+  "cameras": [
+    {
+      "camera_id": "CAM_3",
+      "source_file": "CAM 3.mp4",
+      "role": "entry",
+      "covers_zones": ["ENTRY"],
+      "calibrated": false,
+      "frame": { "w": 1920, "h": 1080 },
+      "entry_line": {
+        "_doc": "Doorway threshold. Camera looks down at the entrance; 'outside' (street/door) is the upper part of the frame. Crossing downward = entering. Calibrated at y=0.40 full-width via a crossing-count sweep over real tracks (data/calib).",
+        "p1": [0.05, 0.40],
+        "p2": [1.00, 0.40],
+        "outside_side": "above"
+      },
+      "zones": [
+        { "zone_id": "ENTRY", "polygon": [[0.05, 0.25], [1.00, 0.25], [1.00, 0.75], [0.05, 0.75]] }
+      ]
+    },
+    {
+      "camera_id": "CAM_2",
+      "source_file": "CAM 2.mp4",
+      "role": "primary",
+      "covers_zones": ["ENTRY", "SKINCARE_WALL", "MAKEUP_WALL", "FOH"],
+      "calibrated": false,
+      "frame": { "w": 1920, "h": 1080 },
+      "entry_line": {
+        "_doc": "The entrance is the bright doorway at the back-left of this wide aisle view. 'outside' = left edge; walking right (into the aisle) = entering.",
+        "p1": [0.13, 0.20],
+        "p2": [0.13, 0.95],
+        "outside_side": "left"
+      },
+      "zones": [
+        { "zone_id": "SKINCARE_WALL", "polygon": [[0.20, 0.05], [0.95, 0.05], [0.95, 0.45], [0.20, 0.45]] },
+        { "zone_id": "FOH",           "polygon": [[0.20, 0.45], [0.95, 0.45], [0.95, 0.70], [0.20, 0.70]] },
+        { "zone_id": "MAKEUP_WALL",   "polygon": [[0.20, 0.70], [0.95, 0.70], [0.95, 0.98], [0.20, 0.98]] }
+      ]
+    },
+    {
+      "camera_id": "CAM_1",
+      "source_file": "CAM 1.mp4",
+      "role": "floor",
+      "covers_zones": ["SKINCARE_WALL", "FOH"],
+      "calibrated": false,
+      "frame": { "w": 1920, "h": 1080 },
+      "zones": [
+        { "zone_id": "SKINCARE_WALL", "polygon": [[0.03, 0.20], [0.55, 0.20], [0.55, 0.95], [0.03, 0.95]] },
+        { "zone_id": "FOH",           "polygon": [[0.55, 0.25], [0.97, 0.25], [0.97, 0.95], [0.55, 0.95]] }
+      ]
+    },
+    {
+      "camera_id": "CAM_5",
+      "source_file": "CAM 5.mp4",
+      "role": "billing",
+      "covers_zones": ["BILLING", "ACCESSORIES"],
+      "calibrated": false,
+      "frame": { "w": 1920, "h": 1080 },
+      "zones": [
+        { "zone_id": "BILLING",     "polygon": [[0.05, 0.25], [0.70, 0.25], [0.70, 0.95], [0.05, 0.95]] },
+        { "zone_id": "ACCESSORIES", "polygon": [[0.70, 0.20], [0.98, 0.20], [0.98, 0.85], [0.70, 0.85]] }
+      ]
+    },
+    {
+      "camera_id": "CAM_4",
+      "source_file": "CAM 4.mp4",
+      "role": "backroom",
+      "covers_zones": [],
+      "calibrated": false,
+      "_note": "Back stockroom. Excluded from customer analytics; any person here is staff/stock handling.",
+      "frame": { "w": 1920, "h": 1080 },
+      "zones": []
+    }
+  ],
+
+  "zones": [
+    { "zone_id": "ENTRY",         "type": "entry",   "label": "Store Entrance", "brands": [] },
+    { "zone_id": "FOH",           "type": "floor",   "label": "Front of House (Makeup & Nail units)",
+      "brands": ["Nail Unit", "Makeup Unit"] },
+    { "zone_id": "SKINCARE_WALL", "type": "floor",   "label": "Skincare Wall (top bays)",
+      "brands": ["EB Korean", "The Face Shop", "Good Vibes", "DermDoc", "Minimalist", "Aqualogica", "Lakme Skin"] },
+    { "zone_id": "MAKEUP_WALL",   "type": "floor",   "label": "Makeup Wall (bottom bays)",
+      "brands": ["Maybelline", "Faces Canada", "Lakme", "Colorbar", "Sugar", "Swiss Beauty", "Renee", "NY Bae", "Alps Goodness", "Streax"] },
+    { "zone_id": "ACCESSORIES",   "type": "floor",   "label": "Accessories & PMU",
+      "brands": ["Accessories", "PMU"] },
+    { "zone_id": "BILLING",       "type": "billing", "label": "Cash Counter", "brands": [] }
+  ]
+}

@@ -1,0 +1,7 @@
+# Detection pipeline deps (GPU container). Torch is pulled from the CUDA wheel
+# index in the Dockerfile; on CPU machines plain `pip install torch` also works.
+ultralytics==8.3.49
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+# optional: enables the Claude Vision staff classifier when ANTHROPIC_API_KEY is set
+anthropic==0.42.0

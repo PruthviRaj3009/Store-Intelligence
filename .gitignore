@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+data/store.db
+data/clips/*.mp4
+*.mp4
+# keep: data/store_layout.json, data/pos_transactions.csv, data/events.jsonl, data/staff_roster.json

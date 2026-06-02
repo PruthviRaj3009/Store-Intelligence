@@ -1,0 +1,15 @@
+[run]
+# detect.py and calibrate.py are thin GPU/video-IO entrypoints (OpenCV +
+# ultralytics frame loops). They are validated as INTEGRATION tests by running them
+# against the real CCTV clips (see RESUME.md / WALKTHROUGH.md), not by unit tests,
+# so they are excluded from statement-coverage of the unit-testable core.
+omit =
+    pipeline/detect.py
+    pipeline/calibrate.py
+    scripts/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise SystemExit

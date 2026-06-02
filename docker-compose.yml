@@ -1,0 +1,61 @@
+# Store Intelligence — one command brings up the DB + API (+ dashboard at /dashboard).
+#   docker compose up
+# Detection (GPU) is a separate, profiled service so the API comes up instantly:
+#   docker compose --profile pipeline run --rm pipeline      # processes clips -> data/events.jsonl
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: store
+      POSTGRES_PASSWORD: store
+      POSTGRES_DB: store
+    ports:
+      - "5433:5432"          # host 5433 -> container 5432, so pgAdmin/DBeaver can connect
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U store -d store"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://store:store@db:5432/store
+      AUTO_INGEST_ON_STARTUP: "true"
+      LOG_LEVEL: INFO
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # mount data so events.jsonl produced by the pipeline is picked up on restart
+    volumes:
+      - ./data:/app/data
+
+  # GPU detection pipeline — only runs under the 'pipeline' profile.
+  # Requires the NVIDIA Container Toolkit on the host.
+  pipeline:
+    profiles: ["pipeline"]
+    build:
+      context: .
+      dockerfile: pipeline/Dockerfile.gpu
+    environment:
+      DEVICE: "cuda"          # set to "cpu" on a machine without an NVIDIA GPU
+      STORE_LAYOUT_PATH: /app/data/store_layout.json
+    volumes:
+      - ./data:/app/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: ["gpu"]
+    command: ["python", "pipeline/detect.py", "--all", "--out", "data/events.jsonl"]
+
+volumes:
+  pgdata:

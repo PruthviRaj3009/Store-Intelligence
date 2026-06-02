@@ -1,0 +1,57 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "1) Start system (db + API)",
+      "type": "shell",
+      "command": "docker compose up -d --build",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "2) Show demo data (CHOOSE cameras)",
+      "type": "shell",
+      "command": "docker compose exec api python scripts/simulate_events.py --seed 7 --cameras \"${input:cameras}\"; docker compose down -v; docker compose up -d",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "detail": "Pick which cameras to display (e.g. 2 3 1, or all), then reloads the dashboard."
+    },
+    {
+      "label": "3) Run REAL detection on clips (CHOOSE cameras, GPU)",
+      "type": "shell",
+      "command": "docker compose --profile pipeline run --build --rm -e CAMERAS=\"${input:cameras}\" pipeline python pipeline/detect.py --cameras \"${input:cameras}\" --out data/events.jsonl; docker compose restart api",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "detail": "Runs the AI model on the real video clips for the chosen cameras (needs GPU + clips)."
+    },
+    {
+      "label": "Reload API (pick up new events)",
+      "type": "shell",
+      "command": "docker compose restart api",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Stop system",
+      "type": "shell",
+      "command": "docker compose down",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Full reset (wipe DB + restart)",
+      "type": "shell",
+      "command": "docker compose down -v; docker compose up -d --build",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "cameras",
+      "type": "promptString",
+      "description": "Which cameras? Type numbers like  2 3 1  or  all",
+      "default": "all"
+    }
+  ]
+}
