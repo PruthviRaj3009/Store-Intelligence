@@ -9,3 +9,4 @@ psycopg[binary]==3.2.3        # PostgreSQL driver (used in docker-compose)
 pytest==8.3.4
 pytest-cov==6.0.0
 httpx==0.28.1                  # FastAPI TestClient
+psycopg2-binary==2.9.10
